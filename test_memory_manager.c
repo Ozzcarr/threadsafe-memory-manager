@@ -469,6 +469,7 @@ void test_exceed_cumulative_allocation_multithread(TestParams params) {
         }
     }
 
+    free(sizes);
     mem_deinit();                  // Clean up the memory manager
     my_barrier_destroy(&barrier);  // Destroy the barrier
     if (pass_count >= 1) {  // At least one thread failed to allocate beyond the
