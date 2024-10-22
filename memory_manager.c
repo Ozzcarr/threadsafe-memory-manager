@@ -122,18 +122,14 @@ void mem_free(void *block) {
  * resize fails.
  */
 void *mem_resize(void *block, size_t size) {
-    pthread_mutex_lock(&lock);
     if (size == 0) {
-        if (block) mem_free_no_lock(block);
-        pthread_mutex_unlock(&lock);
+        if (block) mem_free(block);
         return NULL;
     }
 
-    if (!block) {
-        void *new_block = mem_alloc_no_lock(size);
-        pthread_mutex_unlock(&lock);
-        return new_block;
-    }
+    if (!block) return mem_alloc(size);
+
+    pthread_mutex_lock(&lock);
 
     // Get memory block to free
     MemoryBlock *current = memory_head;
