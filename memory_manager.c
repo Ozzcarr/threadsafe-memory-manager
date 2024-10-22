@@ -171,7 +171,7 @@ void mem_deinit() {
         free(temp);
     }
 
-    memory_size = 0;;
+    memory_size = 0;
     pthread_mutex_unlock(&lock);
     pthread_mutex_destroy(&lock);
 }
