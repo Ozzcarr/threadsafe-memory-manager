@@ -31,16 +31,8 @@ void *mem_alloc_no_lock(size_t size) {
     MemoryBlock *new_block = malloc(sizeof(MemoryBlock));
     if (!new_block) return NULL;
 
-    if (!memory_head) {
-        memory_head = new_block;
-        memory_head->start = memory;
-        memory_head->end = memory + size;
-        memory_head->next = NULL;
-        return memory;
-    }
-
-    // If memory_head does not begin where the memory begins
-    if (memory_head->start - memory >= size) {
+    // Insert first
+    if (!memory_head || memory_head->start - memory >= size) {
         new_block->start = memory;
         new_block->end = memory + size;
         new_block->next = memory_head;
@@ -48,6 +40,7 @@ void *mem_alloc_no_lock(size_t size) {
         return memory;
     }
 
+    // General insert
     MemoryBlock *current = memory_head;
     while (current) {
         size_t free_size = current->next ? current->next->start - current->end
