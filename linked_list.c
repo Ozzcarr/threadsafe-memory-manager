@@ -1,5 +1,7 @@
 #include "linked_list.h"
 
+pthread_mutex_t list_lock;
+
 /**
  * @brief Initializes the linked list.
  *
@@ -9,6 +11,7 @@
 void list_init(Node **head, size_t size) {
     mem_init(size);
     *head = NULL;
+    pthread_mutex_init(&list_lock, NULL);
 }
 
 /**
@@ -18,11 +21,15 @@ void list_init(Node **head, size_t size) {
  * @param data The data to insert into the linked list.
  */
 void list_insert(Node **head, uint16_t data) {
+
     Node *new_node = mem_alloc(sizeof(Node));
     if (!new_node) {
         // printf_red("Memory allocation for insertion failed!\n");
         return;
     }
+
+    pthread_mutex_lock(&list_lock);
+
     if (*head == NULL)
         *head = new_node;
     else {
@@ -32,6 +39,8 @@ void list_insert(Node **head, uint16_t data) {
     }
     new_node->data = data;
     new_node->next = NULL;
+
+    pthread_mutex_unlock(&list_lock);
 }
 
 /**
@@ -45,15 +54,21 @@ void list_insert_after(Node *prev_node, uint16_t data) {
         // printf_red("Previous node is null!\n");
         return;
     }
+
+    pthread_mutex_lock(&list_lock);
+
     Node *next_node = prev_node->next;
     Node *new_node = mem_alloc(sizeof(Node));
     if (!new_node) {
+        pthread_mutex_unlock(&list_lock);
         // printf_red("Memory allocation for insertion after failed!\n");
         return;
     }
     new_node->data = data;
     prev_node->next = new_node;
     new_node->next = next_node;
+
+    pthread_mutex_unlock(&list_lock);
 }
 
 /**
@@ -66,8 +81,11 @@ void list_insert_after(Node *prev_node, uint16_t data) {
 void list_insert_before(Node **head, Node *next_node, uint16_t data) {
     if (*head == NULL || !next_node) return;
 
+    pthread_mutex_lock(&list_lock);
+
     Node *new_node = mem_alloc(sizeof(Node));
     if (!new_node) {
+        pthread_mutex_unlock(&list_lock);
         // printf_red("Memory allocation for insertion before failed!\n");
         return;
     }
@@ -78,6 +96,7 @@ void list_insert_before(Node **head, Node *next_node, uint16_t data) {
     // If insert before the head node.
     if (next_node == *head) {
         *head = new_node;
+        pthread_mutex_unlock(&list_lock);
         return;
     }
 
@@ -85,6 +104,8 @@ void list_insert_before(Node **head, Node *next_node, uint16_t data) {
     Node *current = *head;
     while (current && current->next != next_node) current = current->next;
     if (current) current->next = new_node;
+
+    pthread_mutex_unlock(&list_lock);
 }
 
 /**
@@ -96,11 +117,14 @@ void list_insert_before(Node **head, Node *next_node, uint16_t data) {
 void list_delete(Node **head, uint16_t data) {
     if (*head == NULL) return;
 
+    pthread_mutex_lock(&list_lock);
+
     // If the data is on the first node.
     if ((*head)->data == data) {
         Node *temp = *head;
         *head = temp->next;
         mem_free(temp);
+        pthread_mutex_unlock(&list_lock);
         return;
     }
 
@@ -111,10 +135,13 @@ void list_delete(Node **head, uint16_t data) {
             Node *temp = current->next;
             current->next = temp->next;
             mem_free(temp);
+            pthread_mutex_unlock(&list_lock);
             return;
         }
         current = current->next;
     }
+
+    pthread_mutex_unlock(&list_lock);
 }
 
 /**
@@ -126,11 +153,18 @@ void list_delete(Node **head, uint16_t data) {
  * @return A pointer to the returned node.
  */
 Node *list_search(Node **head, uint16_t data) {
+    pthread_mutex_lock(&list_lock);
+
     Node *current = *head;
     while (current) {
-        if (current->data == data) return current;
+        if (current->data == data) {
+            pthread_mutex_unlock(&list_lock);
+            return current;
+        }
         current = current->next;
     }
+
+    pthread_mutex_unlock(&list_lock);
     return NULL;
 }
 
@@ -150,6 +184,8 @@ void list_display(Node **head) { list_display_range(head, NULL, NULL); }
  * @param end_node A pointer to the end node (NULL for end of linked list).
  */
 void list_display_range(Node **head, Node *start_node, Node *end_node) {
+    pthread_mutex_lock(&list_lock);
+
     printf("[");
     if (!start_node) start_node = *head;
     if (end_node) end_node = end_node->next;
@@ -159,6 +195,8 @@ void list_display_range(Node **head, Node *start_node, Node *end_node) {
         if (start_node && start_node != end_node) printf(", ");
     }
     printf("]");
+
+    pthread_mutex_unlock(&list_lock);
 }
 
 /**
@@ -168,7 +206,12 @@ void list_display_range(Node **head, Node *start_node, Node *end_node) {
  * @return The number of nodes in the linked list.
  */
 int list_count_nodes(Node **head) {
-    if (*head == NULL) return 0;
+    pthread_mutex_lock(&list_lock);
+
+    if (*head == NULL) {
+        pthread_mutex_unlock(&list_lock);
+        return 0;
+    }
     int count = 0;
 
     Node *current = *head;
@@ -176,6 +219,8 @@ int list_count_nodes(Node **head) {
         count++;
         current = current->next;
     }
+
+    pthread_mutex_unlock(&list_lock);
     return count;
 }
 
@@ -185,6 +230,8 @@ int list_count_nodes(Node **head) {
  * @param head A double pointer to the head of the linked list.
  */
 void list_cleanup(Node **head) {
+    pthread_mutex_lock(&list_lock);
+
     Node *current = *head;
     while (current) {
         Node *temp = current;
@@ -193,4 +240,7 @@ void list_cleanup(Node **head) {
     }
     *head = NULL;
     mem_deinit();
+
+    pthread_mutex_unlock(&list_lock);
+    pthread_mutex_destroy(&list_lock);
 }

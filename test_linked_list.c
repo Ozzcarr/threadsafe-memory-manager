@@ -178,7 +178,7 @@ void test_list_insert_before_multithreaded(TestParams *params) {
     Node *head = NULL;
     list_init(&head,
               sizeof(Node) * (params->num_threads +
-                              params->num_nodes));  // Allocate enough space
+                              params->num_nodes + 1));  // Allocate enough space
 
     Node **nodes = malloc(sizeof(Node *) * (params->num_threads +
                                             1));  // Array of pointers to Node
