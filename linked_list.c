@@ -20,7 +20,7 @@ void list_init(Node **head, size_t size) {
 void list_insert(Node **head, uint16_t data) {
     Node *new_node = mem_alloc(sizeof(Node));
     if (!new_node) {
-        printf_red("Memory allocation for insertion failed!\n");
+        // printf_red("Memory allocation for insertion failed!\n");
         return;
     }
     if (*head == NULL)
@@ -42,13 +42,13 @@ void list_insert(Node **head, uint16_t data) {
  */
 void list_insert_after(Node *prev_node, uint16_t data) {
     if (!prev_node) {
-        printf_red("Previous node is null!\n");
+        // printf_red("Previous node is null!\n");
         return;
     }
     Node *next_node = prev_node->next;
     Node *new_node = mem_alloc(sizeof(Node));
     if (!new_node) {
-        printf_red("Memory allocation for insertion after failed!\n");
+        // printf_red("Memory allocation for insertion after failed!\n");
         return;
     }
     new_node->data = data;
@@ -68,7 +68,7 @@ void list_insert_before(Node **head, Node *next_node, uint16_t data) {
 
     Node *new_node = mem_alloc(sizeof(Node));
     if (!new_node) {
-        printf_red("Memory allocation for insertion before failed!\n");
+        // printf_red("Memory allocation for insertion before failed!\n");
         return;
     }
 
