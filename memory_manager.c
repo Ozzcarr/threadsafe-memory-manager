@@ -138,21 +138,27 @@ void *mem_resize(void *block, size_t size) {
 
     size_t current_size = current->end - current->start;
 
-    // Try to allocate with new size
-    previous->next = current->next;
+    // Try to allocate with new size by disconnecting the block that should be resized.
+    if (previous) {
+        previous->next = current->next;
+    } else {
+        memory_head = current->next;
+    }
     void *new_block = mem_alloc_no_lock(size);
 
     if (!new_block) {
         // Allocation failed! Reconnect and return.
-        previous->next = current;
+        if (previous) {
+            previous->next = current;
+        } else {
+            memory_head = current;
+        }
         pthread_mutex_unlock(&lock);
         return NULL;
-    } else {
-        // Allocation succeeded! Free the old memory.
-        free(block);
     }
 
-    // If resize succeeded, move the memory if needed
+    // Allocation succeeded! Free the old memory and possibly move the memory.
+    free(current);
     size_t new_size = (size <= current_size) ? size : current_size;
     if (new_block != block) memcpy(new_block, block, new_size);
     pthread_mutex_unlock(&lock);
