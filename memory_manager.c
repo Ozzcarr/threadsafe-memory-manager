@@ -126,7 +126,11 @@ void *mem_resize(void *block, size_t size) {
 
     // Get memory block to free
     MemoryBlock *current = memory_head;
-    while (current && current->start != block) current = current->next;
+    MemoryBlock *previous = NULL;
+    while (current && current->start != block) {
+        previous = current;
+        current = current->next;
+    }
     if (!current) {
         pthread_mutex_unlock(&lock);
         return NULL;
@@ -134,16 +138,21 @@ void *mem_resize(void *block, size_t size) {
 
     size_t current_size = current->end - current->start;
 
-    // Free and try to allocate with new size
-    mem_free_no_lock(block);
+    // Try to allocate with new size
+    previous->next = current->next;
     void *new_block = mem_alloc_no_lock(size);
+
     if (!new_block) {
-        mem_alloc_no_lock(current_size);
+        // Allocation failed! Reconnect and return.
+        previous->next = current;
         pthread_mutex_unlock(&lock);
         return NULL;
+    } else {
+        // Allocation succeeded! Free the old memory.
+        free(block);
     }
 
-    // If resize succeeded, move the memory
+    // If resize succeeded, move the memory if needed
     size_t new_size = (size <= current_size) ? size : current_size;
     if (new_block != block) memcpy(new_block, block, new_size);
     pthread_mutex_unlock(&lock);
